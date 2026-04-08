@@ -4,9 +4,14 @@ from ..Formatter.Album import format_album
 from .Lyrics import get_lyrics
 
 
-async def get_album(album_id):
-    async with Request() as req:
-        data = await req.get(endpoints.ALBUM + album_id)
+async def get_album(album_id, client=None):
+    url = endpoints.ALBUM + album_id
+
+    if client:
+        data = await client.get(url)
+    else:
+        async with Request() as req:
+            data = await req.get(url)
 
     if not data:
         return None

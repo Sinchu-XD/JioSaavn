@@ -4,11 +4,15 @@ from .. import endpoints
 from .Song import get_song
 
 
-async def search(query, full=False):
+async def search(query, full=False, client=None):
     query = urllib.parse.quote(query)
+    url = endpoints.SEARCH + query
 
-    async with Request() as req:
-        data = await req.get(endpoints.SEARCH + query)
+    if client:
+        data = await client.get(url)
+    else:
+        async with Request() as req:
+            data = await req.get(url)
 
     if not data:
         return []
@@ -19,7 +23,7 @@ async def search(query, full=False):
         return songs
 
     return [
-        await get_song(s.get("id"))
+        await get_song(s.get("id"), client=client)
         for s in songs
         if s.get("id")
     ]

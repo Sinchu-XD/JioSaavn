@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "SaavnAPI"
-version = "2026.4.11"
+version = "2026.4.12"
 description = "Fast async JioSaavn API wrapper for Python"
 readme = "README.md"
 requires-python = ">=3.8"

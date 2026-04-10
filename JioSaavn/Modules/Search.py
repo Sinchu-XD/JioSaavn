@@ -23,12 +23,24 @@ async def search(query, limit=10, lyrics=False, client=None):
     songs = data.get("results") or data.get("songs", {}).get("data", [])
     songs = songs[:limit]
 
-    async def process(song):
-        return await format_song(
-            song,
-            get_lyrics if lyrics else None
-        )
+    sem = asyncio.Semaphore(5)
 
-    return await asyncio.gather(*[
-        process(s) for s in songs if s.get("id")
-    ])
+    async def process(song):
+        try:
+            async with sem:
+                if not song.get("id"):
+                    return None
+
+                return await format_song(
+                    song,
+                    get_lyrics if lyrics else None
+                )
+        except:
+            return None
+
+    results = await asyncio.gather(*[
+        process(s) for s in songs
+    ], return_exceptions=True)
+
+
+    return [r for r in results if r and not isinstance(r, Exception)]

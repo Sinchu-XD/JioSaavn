@@ -23,11 +23,14 @@ async def search(query, limit=10, lyrics=False, client=None):
     songs = data.get("results") or data.get("songs", {}).get("data", [])
     songs = songs[:limit]
 
+    sem = asyncio.Semaphore(5)
+
     async def process(song):
-        return await format_song(
-            song,
-            get_lyrics if lyrics else None
-        )
+        async with sem:
+            return await format_song(
+                song,
+                get_lyrics if lyrics else None
+            )
 
     return await asyncio.gather(*[
         process(s) for s in songs if s.get("id")

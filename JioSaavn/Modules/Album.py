@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 
 from .. import endpoints
-from ..Core.Request import Request
+from ..Core.Request import safe_get
 from ..Formatter.Album import format_album
 from ..Utils.Text import clean
 from .Lyrics import get_lyrics
@@ -27,42 +27,10 @@ def _format_album(data: dict) -> dict:
 
 
 async def get_album(album_id: str, *, lyrics: bool = False, client=None) -> dict | None:
-    """
-    Fetch album details including its full track listing.
-
-    Parameters
-    ----------
-    album_id : str
-        JioSaavn album ID.
-    lyrics : bool
-        If ``True``, fetch lyrics for every track when available.
-    client : JioSaavnClient | None
-        Optional shared session client.
-
-    Returns
-    -------
-    dict | None
-        Formatted album dict with ``id``, ``name``, ``primary_artists``,
-        ``year``, ``image``, ``song_count``, ``language``, and ``songs`` list.
-
-    Example
-    -------
-    >>> album = await get_album("14284038")
-    >>> print(album["name"], "—", album["song_count"], "songs")
-    >>> for track in album["songs"]:
-    ...     print(" ", track["song"])
-    """
     if not album_id or not _ID_RE.match(album_id):
         raise ValueError(f"Invalid album_id: {album_id!r}")
 
-    url = endpoints.ALBUM + album_id
-
-    if client:
-        data = await client.get(url)
-    else:
-        async with Request() as req:
-            data = await req.get(url)
-
+    data = await safe_get(client, endpoints.ALBUM + album_id)
     if not data:
         return None
 

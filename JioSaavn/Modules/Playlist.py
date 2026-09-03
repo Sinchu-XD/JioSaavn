@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 
 from .. import endpoints
-from ..Core.Request import Request
+from ..Core.Request import safe_get
 from ..Formatter.Playlist import format_playlist
 from .Lyrics import get_lyrics
 
@@ -16,42 +16,10 @@ async def _format_playlist(data: dict) -> dict:
 
 
 async def get_playlist(list_id: str, *, lyrics: bool = False, client=None) -> dict | None:
-    """
-    Fetch a playlist and all its songs.
-
-    Parameters
-    ----------
-    list_id : str
-        JioSaavn playlist ID.
-    lyrics : bool
-        If ``True``, fetch lyrics for every track when available.
-    client : JioSaavnClient | None
-        Optional shared session client.
-
-    Returns
-    -------
-    dict | None
-        Formatted playlist dict with ``id``, ``listname``, ``firstname``,
-        ``follower_count``, ``song_count``, and ``songs`` list.
-
-    Example
-    -------
-    >>> pl = await get_playlist("159144718")
-    >>> print(pl["listname"], "—", pl["song_count"], "songs")
-    >>> for track in pl["songs"]:
-    ...     print(" ", track["song"])
-    """
     if not list_id or not _ID_RE.match(list_id):
         raise ValueError(f"Invalid list_id: {list_id!r}")
 
-    url = endpoints.PLAYLIST + list_id
-
-    if client:
-        data = await client.get(url)
-    else:
-        async with Request() as req:
-            data = await req.get(url)
-
+    data = await safe_get(client, endpoints.PLAYLIST + list_id)
     if not data:
         return None
 

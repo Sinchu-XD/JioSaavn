@@ -4,7 +4,7 @@ import asyncio
 import re
 
 from .. import endpoints
-from ..Core.Request import Request
+from ..Core.Request import safe_get
 from ..Formatter.Song import format_song
 from .Lyrics import get_lyrics
 
@@ -12,39 +12,10 @@ _ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 
 
 async def get_song(song_id: str, *, lyrics: bool = False, client=None) -> dict | None:
-    """
-    Fetch full details for a song by its JioSaavn ID.
-
-    Parameters
-    ----------
-    song_id : str
-        JioSaavn song ID (e.g. ``"4ZSL1xJk"``).
-    lyrics : bool
-        If ``True`` and the song has lyrics, fetch and include them in the
-        response (adds an extra network request).
-    client : JioSaavnClient | None
-        Optional shared session client.
-
-    Returns
-    -------
-    dict | None
-        Formatted song dict, or ``None`` if not found.
-
-    Example
-    -------
-    >>> song = await get_song("4ZSL1xJk", lyrics=True)
-    >>> print(song["song"], "—", song["primary_artists"])
-    >>> print(song["media_url"])   # 320 kbps stream URL
-    """
     if not song_id or not _ID_RE.match(song_id):
         raise ValueError(f"Invalid song_id: {song_id!r}")
 
-    if client:
-        data = await client.get(endpoints.SONG + song_id)
-    else:
-        async with Request() as req:
-            data = await req.get(endpoints.SONG + song_id)
-
+    data = await safe_get(client, endpoints.SONG + song_id)
     if not data:
         return None
 
@@ -95,12 +66,7 @@ async def get_songs(
 
     url = endpoints.SONG + ",".join(valid_ids)
 
-    if client:
-        data = await client.get(url)
-    else:
-        async with Request() as req:
-            data = await req.get(url)
-
+    data = await safe_get(client, url)
     if not data:
         return []
 
@@ -111,11 +77,10 @@ async def get_songs(
         raw = data.get(sid)
         if not raw or not isinstance(raw, dict):
             return None
-        async with sem:
-            try:
-                return await format_song(raw, lyrics_func)
-            except Exception:
-                return None
+        try:
+            return await format_song(raw, lyrics_func)
+        except Exception:
+            return None
 
     results = await asyncio.gather(*[process(sid) for sid in valid_ids], return_exceptions=True)
     return [r for r in results if r and not isinstance(r, Exception)]

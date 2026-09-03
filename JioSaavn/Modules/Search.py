@@ -4,7 +4,7 @@ import asyncio
 import urllib.parse
 
 from .. import endpoints
-from ..Core.Request import Request
+from ..Core.Request import safe_get
 from ..Formatter.Song import format_song
 from ..Utils.Text import clean
 from .Lyrics import get_lyrics
@@ -16,44 +16,13 @@ async def search(
     lyrics: bool = False,
     client=None,
 ) -> list[dict]:
-    """
-    Search for songs by keyword, artist name, or song title.
-
-    Parameters
-    ----------
-    query : str
-        Search term (e.g. ``"Arijit Singh"``, ``"Hawa Hawa"``).
-    limit : int
-        Maximum results (1–50, default 10).
-    lyrics : bool
-        Fetch lyrics for matching songs when available.
-    client : JioSaavnClient | None
-        Optional shared session client.
-
-    Returns
-    -------
-    list[dict]
-        List of formatted song dicts, most relevant first.
-
-    Example
-    -------
-    >>> songs = await search("Arijit Singh", limit=5)
-    >>> for s in songs:
-    ...     print(s["song"], "-", s["primary_artists"])
-    """
     if not query or not query.strip():
         return []
 
     limit = max(1, min(limit, 50))
     encoded = urllib.parse.quote(query.strip())
     url = endpoints.SEARCH + encoded
-
-    if client:
-        data = await client.get(url)
-    else:
-        async with Request() as req:
-            data = await req.get(url)
-
+    data = await safe_get(client, url)
     if not data:
         return []
 
@@ -85,44 +54,13 @@ async def search_songs(
     lyrics: bool = False,
     client=None,
 ) -> list[dict]:
-    """
-    Search specifically for songs (alias for :func:`search` with pagination).
-
-    Parameters
-    ----------
-    query : str
-        Search term.
-    limit : int
-        Maximum results per page (1–50, default 10).
-    page : int
-        Page number (1-indexed).
-    lyrics : bool
-        Fetch lyrics for matching songs.
-    client : JioSaavnClient | None
-        Optional shared session client.
-
-    Returns
-    -------
-    list[dict]
-        List of formatted song dicts.
-
-    Example
-    -------
-    >>> songs = await search_songs("Pritam", limit=20, page=2)
-    """
     if not query or not query.strip():
         return []
 
     limit = max(1, min(limit, 50))
     encoded = urllib.parse.quote(query.strip())
     url = endpoints.SEARCH_SONGS + encoded + f"&p={page}&n={limit}"
-
-    if client:
-        data = await client.get(url)
-    else:
-        async with Request() as req:
-            data = await req.get(url)
-
+    data = await safe_get(client, url)
     if not data:
         return []
 
@@ -150,45 +88,13 @@ async def search_albums(
     page: int = 1,
     client=None,
 ) -> list[dict]:
-    """
-    Search specifically for albums.
-
-    Parameters
-    ----------
-    query : str
-        Search term.
-    limit : int
-        Maximum results per page (1–50, default 10).
-    page : int
-        Page number (1-indexed).
-    client : JioSaavnClient | None
-        Optional shared session client.
-
-    Returns
-    -------
-    list[dict]
-        List of album summary dicts with ``id``, ``name``, ``year``,
-        ``image``, ``primary_artists``, ``language``, ``song_count``.
-
-    Example
-    -------
-    >>> albums = await search_albums("Rockstar", limit=5)
-    >>> for a in albums:
-    ...     print(a["name"], a["year"])
-    """
     if not query or not query.strip():
         return []
 
     limit = max(1, min(limit, 50))
     encoded = urllib.parse.quote(query.strip())
     url = endpoints.SEARCH_ALBUMS + encoded + f"&p={page}&n={limit}"
-
-    if client:
-        data = await client.get(url)
-    else:
-        async with Request() as req:
-            data = await req.get(url)
-
+    data = await safe_get(client, url)
     if not data:
         return []
 
@@ -219,45 +125,13 @@ async def search_artists(
     page: int = 1,
     client=None,
 ) -> list[dict]:
-    """
-    Search specifically for artists.
-
-    Parameters
-    ----------
-    query : str
-        Artist name or keyword.
-    limit : int
-        Maximum results per page (1–50, default 10).
-    page : int
-        Page number (1-indexed).
-    client : JioSaavnClient | None
-        Optional shared session client.
-
-    Returns
-    -------
-    list[dict]
-        List of artist summary dicts with ``id``, ``name``, ``image``,
-        ``dominant_language``, ``dominant_type``, ``role``.
-
-    Example
-    -------
-    >>> artists = await search_artists("A.R. Rahman", limit=5)
-    >>> for a in artists:
-    ...     print(a["name"], a["dominant_type"])
-    """
     if not query or not query.strip():
         return []
 
     limit = max(1, min(limit, 50))
     encoded = urllib.parse.quote(query.strip())
     url = endpoints.SEARCH_ARTISTS + encoded + f"&p={page}&n={limit}"
-
-    if client:
-        data = await client.get(url)
-    else:
-        async with Request() as req:
-            data = await req.get(url)
-
+    data = await safe_get(client, url)
     if not data:
         return []
 
@@ -288,45 +162,13 @@ async def search_playlists(
     page: int = 1,
     client=None,
 ) -> list[dict]:
-    """
-    Search specifically for playlists.
-
-    Parameters
-    ----------
-    query : str
-        Search term.
-    limit : int
-        Maximum results per page (1–50, default 10).
-    page : int
-        Page number (1-indexed).
-    client : JioSaavnClient | None
-        Optional shared session client.
-
-    Returns
-    -------
-    list[dict]
-        List of playlist summary dicts with ``id``, ``name``, ``image``,
-        ``song_count``, ``follower_count``, ``language``.
-
-    Example
-    -------
-    >>> playlists = await search_playlists("workout", limit=5)
-    >>> for p in playlists:
-    ...     print(p["name"])
-    """
     if not query or not query.strip():
         return []
 
     limit = max(1, min(limit, 50))
     encoded = urllib.parse.quote(query.strip())
     url = endpoints.SEARCH_PLAYLISTS + encoded + f"&p={page}&n={limit}"
-
-    if client:
-        data = await client.get(url)
-    else:
-        async with Request() as req:
-            data = await req.get(url)
-
+    data = await safe_get(client, url)
     if not data:
         return []
 
@@ -355,34 +197,6 @@ async def search_all(
     limit: int = 5,
     client=None,
 ) -> dict:
-    """
-    Search across all categories at once — songs, albums, artists, and playlists.
-
-    Runs all four searches in parallel using ``asyncio.gather`` so the total
-    latency equals the slowest single request rather than the sum of all four.
-
-    Parameters
-    ----------
-    query : str
-        Search term.
-    limit : int
-        Maximum results per category (1–20, default 5).
-    client : JioSaavnClient | None
-        Optional shared session client.
-
-    Returns
-    -------
-    dict
-        ``{ "songs": [...], "albums": [...], "artists": [...], "playlists": [...] }``
-
-    Example
-    -------
-    >>> results = await search_all("Arijit Singh", limit=3)
-    >>> for s in results["songs"]:
-    ...     print(s["song"])
-    >>> for a in results["artists"]:
-    ...     print(a["name"])
-    """
     if not query or not query.strip():
         return {"songs": [], "albums": [], "artists": [], "playlists": []}
 

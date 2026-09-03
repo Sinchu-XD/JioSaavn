@@ -97,10 +97,19 @@ class DownloadManager:
 def _pick_stream(song: dict, bitrate: int) -> Optional[str]:
     urls = song.get("download_url") or song.get("more_info", {}).get("download_url")
     if isinstance(urls, list):
+        # 1) exact match
         for u in urls:
             if int(u.get("quality", "0").rstrip("kbps") or 0) == bitrate:
                 return u.get("link") or u.get("url")
-        return (urls[-1] or {}).get("link")
+        # 2) highest available bitrate
+        best = None
+        best_q = -1
+        for u in urls:
+            q = int(u.get("quality", "0").rstrip("kbps") or 0)
+            if q > best_q:
+                best_q = q
+                best = u.get("link") or u.get("url")
+        return best
     return song.get("media_url")
 
 

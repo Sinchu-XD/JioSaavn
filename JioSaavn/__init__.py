@@ -2,7 +2,7 @@
 JioSaavn
 ========
 
-Fast, fully-async Python wrapper for the JioSaavn API — 27 exported functions.
+Fast, fully-async Python wrapper for the JioSaavn API.
 
 Quick start
 -----------
@@ -62,7 +62,32 @@ from .Modules.Radio import get_radio
 from .Modules.Resolve import get_song_by_url, get_album_by_url, get_playlist_by_url
 from .Core.Client import JioSaavnClient
 
-__version__ = "2026.6.21"
+from .Modules.SmartQueue import SmartQueue
+from .Utils.Crossfade import crossfade_plan
+
+from .Analysis.Playlist import analyze_playlist, find_duplicates, infer_mood
+from .Analysis.Recommender import recommend_from_history, similar_songs_deep
+from .Analysis.TasteProfile import TasteProfile, build_profile, load_or_build
+from .Analysis.RecommendationEngine import RecommendationEngine
+from .Analysis.Contextual import ContextualRecommender
+from .Analysis.DiscoveryGraph import DiscoveryGraph
+from .Analysis.LyricsAnalysis import LyricsAnalysis
+from .Analysis.Insights import Insights
+
+from .Modules.Sync import sync_spotify_playlist, sync_youtube_playlist
+from .Modules.Backup import backup_library, restore_library
+
+from .Modules.AdvSearch import fuzzy_search, search_by_lyrics, search_filters
+
+from .Modules.DownloadPro import DownloadManager, download_with_lyrics
+
+from .Modules.Discovery import daily_mix, time_machine, regional_charts, artist_radio
+
+from .Modules.Social import get_song_credits, get_release_calendar, compare_artists
+
+from .Modules.Webhooks import WebhookNotifier
+
+__version__ = "2026.9.3"
 __author__ = "Abhi Singh"
 __license__ = "MIT"
 
@@ -101,45 +126,44 @@ __all__ = [
     "get_modules",
     # ── Session client ──────────────────────────────────────────
     "JioSaavnClient",
-]
-"""Add these lines to your existing JioSaavn/__init__.py to expose the new APIs."""
-
-# --- Smart playback ---
-from .Modules.SmartQueue import SmartQueue
-from .Utils.Crossfade import crossfade_plan
-
-# --- Analysis ---
-from .Analysis.Playlist import analyze_playlist, find_duplicates, infer_mood
-from .Analysis.Recommender import recommend_from_history, similar_songs_deep
-
-# --- Sync / backup ---
-from .Modules.Sync import sync_spotify_playlist, sync_youtube_playlist
-from .Modules.Backup import backup_library, restore_library
-
-# --- Advanced search ---
-from .Modules.AdvSearch import fuzzy_search, search_by_lyrics, search_filters
-
-# --- Download Pro ---
-from .Modules.DownloadPro import DownloadManager, download_with_lyrics
-
-# --- Discovery ---
-from .Modules.Discovery import daily_mix, time_machine, regional_charts, artist_radio
-
-# --- Social / metadata ---
-from .Modules.Social import get_song_credits, get_release_calendar, compare_artists
-
-# --- Webhooks ---
-from .Modules.Webhooks import WebhookNotifier
-
-__all__ = [
-    "SmartQueue", "crossfade_plan",
-    "analyze_playlist", "find_duplicates", "infer_mood",
-    "recommend_from_history", "similar_songs_deep",
-    "sync_spotify_playlist", "sync_youtube_playlist",
-    "backup_library", "restore_library",
-    "fuzzy_search", "search_by_lyrics", "search_filters",
-    "DownloadManager", "download_with_lyrics",
-    "daily_mix", "time_machine", "regional_charts", "artist_radio",
-    "get_song_credits", "get_release_calendar", "compare_artists",
+    # ── Smart playback ──────────────────────────────────────────
+    "SmartQueue",
+    "crossfade_plan",
+    # ── Analysis ────────────────────────────────────────────────
+    "analyze_playlist",
+    "find_duplicates",
+    "infer_mood",
+    "recommend_from_history",
+    "similar_songs_deep",
+    "TasteProfile",
+    "build_profile",
+    "load_or_build",
+    "RecommendationEngine",
+    "ContextualRecommender",
+    "DiscoveryGraph",
+    "LyricsAnalysis",
+    "Insights",
+    # ── Sync / backup ───────────────────────────────────────────
+    "sync_spotify_playlist",
+    "sync_youtube_playlist",
+    "backup_library",
+    "restore_library",
+    # ── Advanced search ─────────────────────────────────────────
+    "fuzzy_search",
+    "search_by_lyrics",
+    "search_filters",
+    # ── Download Pro ────────────────────────────────────────────
+    "DownloadManager",
+    "download_with_lyrics",
+    # ── Discovery features ──────────────────────────────────────
+    "daily_mix",
+    "time_machine",
+    "regional_charts",
+    "artist_radio",
+    # ── Social / metadata ───────────────────────────────────────
+    "get_song_credits",
+    "get_release_calendar",
+    "compare_artists",
+    # ── Webhooks ────────────────────────────────────────────────
     "WebhookNotifier",
 ]

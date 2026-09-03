@@ -4,7 +4,7 @@ import re
 import urllib.parse
 
 from .. import endpoints
-from ..Core.Request import Request
+from ..Core.Request import safe_get
 from ..Formatter.Song import format_song
 from ..Utils.Text import clean
 from .Lyrics import get_lyrics
@@ -29,10 +29,7 @@ async def _resolve(url: str, kind: str, client=None) -> dict | None:
     if not token:
         raise ValueError(f"Cannot extract token from URL: {url!r}")
     api_url = endpoints.RESOLVE + f"&token={token}&type={kind}"
-    if client:
-        return await client.get(api_url)
-    async with Request() as req:
-        return await req.get(api_url)
+    return await safe_get(client, api_url)
 
 
 async def get_song_by_url(

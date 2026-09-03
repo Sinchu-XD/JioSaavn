@@ -4,6 +4,7 @@ import json
 import aiohttp
 
 from .Parser import extract_json
+from .Errors import APIError, NetworkError
 
 HEADERS = {
     "User-Agent": (
@@ -15,6 +16,7 @@ HEADERS = {
 }
 
 DEFAULT_TIMEOUT = aiohttp.ClientTimeout(total=15, connect=5)
+MAX_RETRIES = 3
 
 
 class Request:
@@ -36,13 +38,44 @@ class Request:
                 "Request must be used as an async context manager: "
                 "`async with Request() as req:`"
             )
-        try:
-            async with self.session.get(url) as res:
-                if res.status != 200:
-                    return None
+        last_exc = None
+        for attempt in range(MAX_RETRIES):
+            try:
+                async with self.session.get(url) as res:
+                    if res.status != 200:
+                        body = await res.text()
+                        raise APIError(
+                            f"HTTP {res.status} for {url}",
+                            status=res.status,
+                            url=url,
+                        )
+                    text = await res.text()
+                    return extract_json(text)
 
-                text = await res.text()
-                return extract_json(text)
+            except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
+                last_exc = exc
+                if attempt < MAX_RETRIES - 1:
+                    await asyncio.sleep(2 ** attempt)  # 1s, 2s, 4s
+                    continue
+                raise NetworkError(
+                    f"Request failed after {MAX_RETRIES} attempts: {url}",
+                ) from exc
 
-        except (aiohttp.ClientError, asyncio.TimeoutError):
-            return None
+        return None  # unreachable
+
+
+async def safe_get(client, url: str, fallback=None):
+    """Fetch via shared client or a fresh Request session.
+
+    Returns ``fallback`` on any error.  Used by all API modules so they
+    don't have to repeat the try/except boilerplate.
+    """
+    try:
+        if client is not None:
+            data = await client.get(url)
+        else:
+            async with Request() as req:
+                data = await req.get(url)
+        return data if data is not None else fallback
+    except (APIError, NetworkError):
+        return fallback

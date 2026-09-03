@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from .. import endpoints
-from ..Core.Request import Request
+from ..Core.Request import safe_get
 from ..Utils.Text import clean
 
 
@@ -29,12 +29,7 @@ def _format_trending_item(item: dict) -> dict:
 
 
 async def _get_launch_data(client=None) -> dict:
-    if client:
-        data = await client.get(endpoints.LAUNCH_DATA)
-    else:
-        async with Request() as req:
-            data = await req.get(endpoints.LAUNCH_DATA)
-    return data or {}
+    return await safe_get(client, endpoints.LAUNCH_DATA) or {}
 
 
 async def get_trending(
@@ -43,35 +38,6 @@ async def get_trending(
     limit: int = 20,
     client=None,
 ) -> list[dict]:
-    """
-    Fetch currently trending songs and albums on JioSaavn.
-
-    Returns items from JioSaavn's ``new_trending`` feed, which contains a
-    mix of recently trending songs and newly released albums.
-
-    Parameters
-    ----------
-    language : str | list[str] | None
-        Filter by language (e.g. ``"hindi"``, ``["hindi", "english"]``).
-        ``None`` returns all languages.
-    limit : int
-        Maximum number of results (default 20).
-    client : JioSaavnClient | None
-        Optional shared session client.
-
-    Returns
-    -------
-    list[dict]
-        List of trending item dicts with ``id``, ``title``, ``type``
-        (``"song"`` or ``"album"``), ``image``, ``language``,
-        ``primary_artists``, ``release_date``.
-
-    Example
-    -------
-    >>> items = await get_trending(language="hindi", limit=10)
-    >>> for item in items:
-    ...     print(item["title"], f"({item['type']})")
-    """
     limit = max(1, min(limit, 50))
     launch = await _get_launch_data(client=client)
 
@@ -92,30 +58,6 @@ async def get_new_releases(
     limit: int = 20,
     client=None,
 ) -> list[dict]:
-    """
-    Fetch newly released albums from JioSaavn.
-
-    Parameters
-    ----------
-    language : str | list[str] | None
-        Optional language filter (e.g. ``"hindi"``, ``"english"``).
-    limit : int
-        Maximum number of albums (default 20).
-    client : JioSaavnClient | None
-        Optional shared session client.
-
-    Returns
-    -------
-    list[dict]
-        List of album summary dicts with ``id``, ``title``, ``image``,
-        ``language``, ``release_date``, ``song_count``.
-
-    Example
-    -------
-    >>> albums = await get_new_releases(language="punjabi", limit=10)
-    >>> for a in albums:
-    ...     print(a["title"], a["release_date"])
-    """
     limit = max(1, min(limit, 50))
     launch = await _get_launch_data(client=client)
 
@@ -135,36 +77,9 @@ async def get_top_searches(
     limit: int = 10,
     client=None,
 ) -> list[str]:
-    """
-    Fetch the current top search queries on JioSaavn.
-
-    Parameters
-    ----------
-    limit : int
-        Maximum number of search terms to return (default 10).
-    client : JioSaavnClient | None
-        Optional shared session client.
-
-    Returns
-    -------
-    list[str]
-        List of top search term strings, e.g.
-        ``["Arijit Singh", "Pritam", "Bollywood Hits", ...]``.
-
-    Example
-    -------
-    >>> terms = await get_top_searches(limit=10)
-    >>> for t in terms:
-    ...     print(t)
-    """
     limit = max(1, min(limit, 50))
 
-    if client:
-        data = await client.get(endpoints.TOP_SEARCHES)
-    else:
-        async with Request() as req:
-            data = await req.get(endpoints.TOP_SEARCHES)
-
+    data = await safe_get(client, endpoints.TOP_SEARCHES)
     if not data:
         return []
 
@@ -193,34 +108,6 @@ async def get_modules(
     limit: int = 10,
     client=None,
 ) -> dict:
-    """
-    Fetch all JioSaavn homepage modules in a single API call.
-
-    Returns trending items, new releases, charts, and featured playlists
-    simultaneously — useful when you need to populate a home screen or
-    dashboard without multiple separate requests.
-
-    Parameters
-    ----------
-    language : str | None
-        Optional language filter applied to all modules.
-    limit : int
-        Maximum items per module (default 10).
-    client : JioSaavnClient | None
-        Optional shared session client.
-
-    Returns
-    -------
-    dict
-        ``{ "trending": [...], "new_releases": [...],
-            "charts": [...], "featured_playlists": [...] }``
-
-    Example
-    -------
-    >>> modules = await get_modules(language="hindi", limit=5)
-    >>> for item in modules["trending"]:
-    ...     print(item["title"])
-    """
     limit = max(1, min(limit, 50))
     launch = await _get_launch_data(client=client)
 

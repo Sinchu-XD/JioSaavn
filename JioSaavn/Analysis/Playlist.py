@@ -67,21 +67,70 @@ def find_duplicates(songs: list[dict], threshold: float = 0.9) -> list[tuple[dic
 
 
 MOOD_KEYWORDS = {
-    "romantic": ["love", "romance", "heart", "kiss", "pyar", "ishq", "mohabbat"],
-    "party": ["party", "dance", "club", "beat", "dj", "nachle"],
-    "sad": ["sad", "tears", "cry", "alone", "broken", "judai", "bewafa"],
-    "workout": ["power", "energy", "fire", "warrior", "beast", "pump"],
-    "chill": ["chill", "relax", "calm", "peace", "acoustic"],
-    "devotional": ["bhajan", "aarti", "kirtan", "prayer", "god", "allah", "ram", "krishna"],
+    "romantic": [
+        "love", "romance", "heart", "kiss", "pyar", "ishq", "mohabbat",
+        "jaan", "dil", "teda", "sajni", "intzaar", "mulaqat", "sajna",
+    ],
+    "party": [
+        "party", "dance", "club", "beat", "dj", "nachle", "masti",
+        "hangover", "remix", "pump", "groove",
+    ],
+    "sad": [
+        "sad", "tears", "cry", "alone", "broken", "judai", "bewafa",
+        "dard", "dukh", "tanhaai", "bekarar", "aansu",
+    ],
+    "workout": [
+        "power", "energy", "fire", "warrior", "beast", "pump", "strong",
+        "fight", "rise", "unstoppable",
+    ],
+    "chill": [
+        "chill", "relax", "calm", "peace", "acoustic", "slow", "lofi",
+        "sufi", "qawwali",
+    ],
+    "devotional": [
+        "bhajan", "aarti", "kirtan", "prayer", "god", "allah", "ram",
+        "krishna", "shiva", "bhagwan", "ishwar", "divine", "mandir",
+        "gurbani",
+    ],
+    "upbeat": [
+        "zara", "jab tak", "jab", "phir", "dil", "baar", "bada", "badi",
+        "high", "josh", "jhatka", "mast", "rang", "rang de", "jhoom",
+    ],
 }
 
 
 def infer_mood(song: dict) -> str:
-    """Infer mood label from song title + lyrics snippet."""
-    haystack = " ".join(str(song.get(k, "")) for k in ("name", "title", "subtitle", "lyrics")).lower()
-    scores = {mood: sum(1 for kw in kws if kw in haystack) for mood, kws in MOOD_KEYWORDS.items()}
-    best = max(scores.items(), key=lambda x: x[1])
-    return best[0] if best[1] > 0 else "neutral"
+    """Infer mood label from song title + primary_artists + duration hint.
+
+    Scoring is now multi-source:
+    * Title / subtitle keyword match (highest weight)
+    * Primary artists hint (e.g., "Yo Yo Honey Singh" → party)
+    * Duration heuristic (≤180s → upbeat/party, ≥300s → romantic/chill)
+    """
+    scores: dict[str, float] = {mood: 0.0 for mood in MOOD_KEYWORDS}
+    title = " ".join(str(song.get(k, "")) for k in ("name", "title", "subtitle", "description"))
+    artists = str(song.get("primary_artists", ""))
+    haystack = f"{title} {artists}".lower()
+
+    for mood, kws in MOOD_KEYWORDS.items():
+        for kw in kws:
+            if kw in haystack:
+                scores[mood] += 1.0  # keyword hit
+
+    # Duration heuristic (minor)
+    try:
+        dur = int(song.get("duration") or 0)
+        if dur and dur <= 180:
+            scores["upbeat"] += 0.5
+            scores["party"] += 0.3
+        elif dur >= 300:
+            scores["romantic"] += 0.3
+            scores["chill"] += 0.3
+    except (TypeError, ValueError):
+        pass
+
+    best_mood, best_score = max(scores.items(), key=lambda x: x[1])
+    return best_mood if best_score > 0 else "neutral"
 
 
 def _artists_of(s: dict) -> list[str]:
